@@ -195,11 +195,8 @@ def generar_permisos():
     locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')  # En sistemas Linux/Mac
     # locale.setlocale(locale.LC_TIME, 'Spanish_Spain.1252')  # En sistemas Windows
 
-    # Obtener la fecha actual
-    fecha_actual = datetime.now()
-
-    # Formatear la fecha
-    fecha_formateada = fecha_actual.strftime("%d de %B de %Y")
+    # Obtener la fecha actual en el formato deseado
+    fecha_actual = datetime.now().strftime("TINOGASTA, %d de %B DE %Y").capitalize()
 
     for (nro, alumno, dni, modalidad), grupo in grupos:
         # Crear un documento basado en la plantilla
@@ -207,8 +204,7 @@ def generar_permisos():
 
         # Llenar encabezados del acta
         for paragraph in doc.paragraphs:
-            if "TINOGASTA" in paragraph.text:
-                aplicar_estilo_encabezado(paragraph, "30 de junio DE 2024", fecha_formateada, fuente="Arial", tamaño=10, negrita=True)
+
             if "PERMISO DE EXAMEN N°" in paragraph.text:
                 aplicar_estilo_encabezado(paragraph, "56", str(nro), fuente="Arial", tamaño=12, negrita=True)
             if "alumno/a" in paragraph.text:
@@ -244,6 +240,15 @@ def generar_permisos():
 
                     orden += 1
                     fila_actual += 1
+        # Reemplazar el texto específico en los párrafos
+        for paragraph in doc.paragraphs:
+            if "TINOGASTA, 30 de junio 		DE 2024" in paragraph.text:
+                paragraph.text = paragraph.text.replace("TINOGASTA, 30 de junio 		DE 2024", fecha_actual)
+                # Modificar el estilo de la fuente
+                run = paragraph.runs[0]  # El "run" representa un fragmento del texto en el párrafo
+                run.font.name = 'Arial'  # Cambiar la fuente a Arial
+                run.font.size = Pt(10)  # Cambiar el tamaño de la fuente
+                run.font.bold = True  # Negrita
 
         # Limpiar caracteres inválidos en el nombre del archivo
         alumno_limpio = re.sub(r'[<>:"/\\|?*]', '', alumno)
