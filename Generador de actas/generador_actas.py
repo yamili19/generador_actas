@@ -20,6 +20,8 @@ except FileNotFoundError:
     df = pd.DataFrame(columns=columnas)
     with pd.ExcelWriter(archivo_excel, engine="openpyxl") as writer:
         df.to_excel(writer, sheet_name="PERMISOS", index=False)  # Crear el archivo Excel con las columnas iniciales
+        df.to_excel(writer, sheet_name="MMO", index=False)
+        df.to_excel(writer, sheet_name="TEM", index=False)
     # Proteger el archivo Excel
     wb = load_workbook(archivo_excel)
     ws = wb.active
@@ -76,6 +78,10 @@ materias_tem = [
     "SISTEMAS MECÁNICOS II", "ELECTRÓNICA INDUSTRIAL", "TALLER DE ELECTRÓNICA", "PROY. Y DISEÑO ELECTROMECÁNICO",
     "PROY. Y DISEÑO DE INST. ELÉCTRICAS", "SISTEMAS DE MECANIZADO CNC", "PASANTÍA"
 ]
+
+materias_mmo_con_sufijo = [f"{materia} (MMO)" for materia in materias_mmo]
+materias_tem_con_sufijo = [f"{materia} (TEM)" for materia in materias_tem]
+
 
 from docx.shared import Pt
 from docx.oxml.ns import qn
@@ -146,7 +152,7 @@ def generar_actas_excel(archivo_excel, modalidad):
             if "EXAMEN DE ALUMNO" in paragraph.text:
                 aplicar_estilo_encabezado(paragraph, "REGULAR", condicion)
             if "ESPACIO CURRICULAR" in paragraph.text:
-                aplicar_estilo_encabezado(paragraph, "HISTORIA III", materia)
+                aplicar_estilo_encabezado(paragraph, "HISTORIA III", materia.split(" (")[0])
             if "PLAN DE ESTUDIO" in paragraph.text:
                 aplicar_estilo_encabezado(paragraph, "TEM", modalidad)
             if "CURSO" in paragraph.text:
@@ -179,7 +185,7 @@ def generar_actas_excel(archivo_excel, modalidad):
                     fila_actual += 1
 
         # Limpiar caracteres inválidos en el nombre del archivo
-        materia_limpia = re.sub(r'[<>:"/\\|?*]', '', materia)
+        materia_limpia = re.sub(r'[<>:"/\\|?*]', '', materia.split(" (")[0])
         curso_limpio = re.sub(r'[<>:"/\\|?*]', '', curso)
         modalidad_limpia = re.sub(r'[<>:"/\\|?*]', '', modalidad)
         condicion_limpia = re.sub(r'[<>:"/\\|?*]', '', condicion)
@@ -398,8 +404,8 @@ def generar_actas():
 
     # Concatenar todos los DataFrames y filtrar por modalidad
     datos_reestructurados = pd.concat(datos_reestructurados, ignore_index=True)
-    datos_mmo = datos_reestructurados[datos_reestructurados["ESPACIO CURRICULAR"].isin(materias_mmo)].copy()
-    datos_tem = datos_reestructurados[datos_reestructurados["ESPACIO CURRICULAR"].isin(materias_tem)].copy()
+    datos_mmo = datos_reestructurados[datos_reestructurados["ESPACIO CURRICULAR"].isin(materias_mmo_con_sufijo)].copy()
+    datos_tem = datos_reestructurados[datos_reestructurados["ESPACIO CURRICULAR"].isin(materias_tem_con_sufijo)].copy()
 
     # Añadir columnas de modalidad
     datos_mmo["MODALIDAD"] = "MMO"
@@ -468,7 +474,7 @@ def registrar():
     dni = entrada_dni.get().strip()
     curso = combobox_curso.get().strip().upper()
     especialidad = combobox_especialidad.get().strip().upper()
-    materia = combobox_materia.get().strip().upper()
+    materia = f"{combobox_materia.get().strip().upper()} ({especialidad})"
     condicion = combobox_condicion.get().strip().upper()
 
     # Validar campos obligatorios
@@ -808,9 +814,23 @@ boton_buscar_dni = tk.Button(ventana, text="Buscar por DNI", command=buscar_alum
 boton_buscar_dni.grid(row=1, column=2, padx=10, pady=10, sticky="ew")
 boton_buscar_alumno = tk.Button(ventana, text="Buscar por Nombre", command=buscar_alumno_nombre, font = ("Calibri", 11, "bold"), bg="white", image=lupa, compound="left")
 boton_buscar_alumno.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
+# Cargar el archivo Excel
+wb = load_workbook(archivo_excel)
+ws = wb.active
+
+# Desbloquear la hoja para ediciones
+ws.protection = SheetProtection(sheet=False)
 ajustar_columnas_automatically(archivo_excel, "PERMISOS")
 ajustar_columnas_automatically(archivo_excel, "MMO")
 ajustar_columnas_automatically(archivo_excel, "TEM")
+
+# Reproteger la hoja después de editar
+wb = load_workbook(archivo_excel)
+ws = wb.active
+ws.protection = SheetProtection(sheet=True, password=contraseña)
+
+# Guardar el archivo nuevamente con protección
+wb.save(archivo_excel)
 
 # Configurar las columnas de la cuadrícula para que sean expandibles
 ventana.columnconfigure(0, weight=1)  # Columna de etiquetas (ancla derecha)
