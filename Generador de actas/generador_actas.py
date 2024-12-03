@@ -516,6 +516,30 @@ def registrar():
         messagebox.showerror("Error",
                              "El archivo Excel está abierto. Por favor, cierre el archivo y luego registre al alumno.")
 
+def buscar_alumno_nombre(event=None):
+    # Búsqueda parcial
+    nombre_buscado = entrada_nombre.get().strip()
+
+    # Leer el archivo excel
+    df = pd.read_excel(archivo_excel)
+
+    for item in tabla.get_children():
+        tabla.delete(item)
+    if nombre_buscado == "":
+        # Si el campo está vacío, mostrar todos los registros
+        for _, row in df.iterrows():
+            tabla.insert("", tk.END, values=list(row))
+        return
+    # Buscar coincidencias parciales en el campo "ALUMNO"
+    df_filtrado = df[df["ALUMNO"].astype(str).str.contains(nombre_buscado, case=False, na=False)]
+
+    if not df_filtrado.empty:
+        # Mostrar cada registro del alumno encontrado en la tabla
+        for _, row in df_filtrado.iterrows():
+            tabla.insert("", tk.END, values=list(row))
+    else:
+        # Si no se encuentra ninguna coincidencia
+        messagebox.showerror("Error", "No se encontró ningún alumno con el DNI ingresado.")
 
 def buscar_alumno(event=None):
     dni_buscado = entrada_dni.get().strip()
@@ -720,8 +744,10 @@ boton_generar_actas = tk.Button(ventana, text="Generar Actas", command=generar_a
 boton_generar_actas.grid(row=7, column=2, padx=10, pady=10, sticky="ew")
 boton_generar_permisos = tk.Button(ventana, text="Generar Permisos", command=generar_permisos, font=("Calibri", 11, "bold"), bg="white", image=word, compound="left",)
 boton_generar_permisos.grid(row=7, column=3, padx=10, pady=10, sticky="ew")
-boton_buscar = tk.Button(ventana, text="Buscar", command=buscar_alumno, font = ("Calibri", 11, "bold"), bg="white", image=lupa, compound="left")
-boton_buscar.grid(row=1, column=2, padx=10, pady=10, sticky="ew")
+boton_buscar_dni = tk.Button(ventana, text="Buscar por DNI", command=buscar_alumno, font = ("Calibri", 11, "bold"), bg="white", image=lupa, compound="left")
+boton_buscar_dni.grid(row=1, column=2, padx=10, pady=10, sticky="ew")
+boton_buscar_alumno = tk.Button(ventana, text="Buscar por Nombre", command=buscar_alumno_nombre, font = ("Calibri", 11, "bold"), bg="white", image=lupa, compound="left")
+boton_buscar_alumno.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
 ajustar_columnas_automatically(archivo_excel, "PERMISOS")
 ajustar_columnas_automatically(archivo_excel, "MMO")
 ajustar_columnas_automatically(archivo_excel, "TEM")
