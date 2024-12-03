@@ -2,12 +2,17 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk  # Para usar Combobox
 import pandas as pd
+from openpyxl import load_workbook, Workbook
+from openpyxl.worksheet.protection import SheetProtection
+from openpyxl.workbook.protection import WorkbookProtection
+
 
 # Crear el DataFrame inicial vacío
 columnas = ["N°","ALUMNO", "DNI", "MODALIDAD", "CONDICION", "CURSO", "ESPACIO CURRICULAR"]
 
 # Intentar leer el archivo Excel
 archivo_excel = "acta_de_examen.xlsx"
+contraseña = "153570"
 try:
     df = pd.read_excel(archivo_excel, dtype={"DNI": int})  # Leer el archivo Excel
 except FileNotFoundError:
@@ -15,6 +20,16 @@ except FileNotFoundError:
     df = pd.DataFrame(columns=columnas)
     with pd.ExcelWriter(archivo_excel, engine="openpyxl") as writer:
         df.to_excel(writer, sheet_name="PERMISOS", index=False)  # Crear el archivo Excel con las columnas iniciales
+    # Proteger el archivo Excel
+    wb = load_workbook(archivo_excel)
+    ws = wb.active
+    
+    # Proteger la hoja
+    ws.protection = SheetProtection(sheet=True, password=contraseña)
+    
+    # Proteger el libro completo
+    wb.security = WorkbookProtection(workbookPassword=contraseña, lockStructure=True)
+    wb.save(archivo_excel)
 
 # Listas de materias para las modalidades MMO y TEM
 materias_mmo = [
@@ -104,6 +119,14 @@ def aplicar_estilo_personalizado_celda(celda, texto, fuente="Arial", tamaño=11,
 import re  # Importar para manejar caracteres especiales
 
 def generar_actas_excel(archivo_excel, modalidad):
+
+    # Cargar el archivo Excel
+    wb = load_workbook(archivo_excel)
+    ws = wb.active
+
+    # Desbloquear la hoja para ediciones
+    ws.protection = SheetProtection(sheet=False)
+
     # Leer la hoja correspondiente (TEM o MMO) del archivo Excel
     df = pd.read_excel(archivo_excel, sheet_name=modalidad)
 
@@ -174,6 +197,15 @@ def generar_actas_excel(archivo_excel, modalidad):
 
         # Guardar el documento
         doc.save(ruta_archivo)
+
+    # Reproteger la hoja después de editar
+    wb = load_workbook(archivo_excel)
+    ws = wb.active
+    ws.protection = SheetProtection(sheet=True, password=contraseña)
+
+    # Guardar el archivo nuevamente con protección
+    wb.save(archivo_excel)
+
 import openpyxl
 from openpyxl.styles import Alignment
 
@@ -181,8 +213,14 @@ from datetime import datetime
 import locale
 
 def generar_permisos():
-    # Leer la hoja correspondiente (TEM o MMO) del archivo Excel
+    # Cargar el archivo Excel
+    wb = load_workbook(archivo_excel)
+    ws = wb.active
 
+    # Desbloquear la hoja para ediciones
+    ws.protection = SheetProtection(sheet=False)
+
+    # Leer la hoja correspondiente (TEM o MMO) del archivo Excel
     df = pd.read_excel(archivo_excel, sheet_name='PERMISOS')
 
     # Obtener las columnas dinámicas de alumnos y DNIs
@@ -266,6 +304,14 @@ def generar_permisos():
 
         # Guardar el documento
         doc.save(ruta_archivo)
+    
+    # Reproteger la hoja después de editar
+    wb = load_workbook(archivo_excel)
+    ws = wb.active
+    ws.protection = SheetProtection(sheet=True, password=contraseña)
+
+    # Guardar el archivo nuevamente con protección
+    wb.save(archivo_excel)
 
     messagebox.showinfo("Éxito",
                         "Permisos generados correctamente.")
@@ -306,6 +352,13 @@ def ajustar_columnas_automatically(archivo_excel, sheet):
 
 
 def generar_actas():
+
+    # Cargar el archivo Excel
+    wb = load_workbook(archivo_excel)
+    ws = wb.active
+
+    # Desbloquear la hoja para ediciones
+    ws.protection = SheetProtection(sheet=False)
     try:
         with open(archivo_excel, "r+"):
             pass  # Si podemos abrirlo en modo lectura-escritura, está disponible
@@ -380,6 +433,13 @@ def generar_actas():
         datos.to_excel(writer, sheet_name="PERMISOS", index=False)
         datos_mmo_reorganizados.to_excel(writer, sheet_name="MMO", index=False)
         datos_tem_reorganizados.to_excel(writer, sheet_name="TEM", index=False)
+    # Reproteger la hoja después de editar
+    wb = load_workbook(archivo_excel)
+    ws = wb.active
+    ws.protection = SheetProtection(sheet=True, password=contraseña)
+
+    # Guardar el archivo nuevamente con protección
+    wb.save(archivo_excel)
 
 def generar_actas_imprimir():
     generar_actas()
@@ -539,7 +599,7 @@ def buscar_alumno_nombre(event=None):
             tabla.insert("", tk.END, values=list(row))
     else:
         # Si no se encuentra ninguna coincidencia
-        messagebox.showerror("Error", "No se encontró ningún alumno con el DNI ingresado.")
+        messagebox.showerror("Error", "No se encontró ningún alumno con el nombre ingresado.")
 
 def buscar_alumno(event=None):
     dni_buscado = entrada_dni.get().strip()
