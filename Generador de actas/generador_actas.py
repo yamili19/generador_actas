@@ -6,6 +6,20 @@ from openpyxl import load_workbook, Workbook
 from openpyxl.worksheet.protection import SheetProtection
 from openpyxl.workbook.protection import WorkbookProtection
 
+import sys
+import os
+
+# Función para obtener la ruta del recurso
+def obtener_ruta_recurso(relativa):
+    if getattr(sys, 'frozen', False):  # Si está empaquetado con PyInstaller
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relativa)
+
+# Ejemplo de uso
+ruta_permiso = obtener_ruta_recurso("recursos\PERMISOS EXAMEN - 2023.docx")
+ruta_acta = obtener_ruta_recurso("recursos\ACTA DE EXAMEN.docx")
 
 # Crear el DataFrame inicial vacío
 columnas = ["N°","ALUMNO", "DNI", "MODALIDAD", "CONDICION", "CURSO", "ESPACIO CURRICULAR"]
@@ -145,7 +159,7 @@ def generar_actas_excel(archivo_excel, modalidad):
 
     for (materia, curso, condicion), grupo in grupos:
         # Crear un documento basado en la plantilla
-        doc = Document("ACTA DE EXAMEN.docx")
+        doc = Document(ruta_acta)
 
         # Llenar encabezados del acta
         for paragraph in doc.paragraphs:
@@ -244,7 +258,7 @@ def generar_permisos():
 
     for (nro, alumno, dni, modalidad), grupo in grupos:
         # Crear un documento basado en la plantilla
-        doc = Document("PERMISOS EXAMEN - 2023.docx")
+        doc = Document(ruta_permiso)
 
         # Llenar encabezados del acta
         for paragraph in doc.paragraphs:
@@ -275,7 +289,7 @@ def generar_permisos():
                         celda = table.add_row().cells
 
                     aplicar_estilo_personalizado_celda(celda[0], f"{orden:02}", fuente="Arial", tamaño=11, negrita=True)
-                    aplicar_estilo_personalizado_celda(celda[1], materia, fuente="Arial", tamaño=11, negrita=True)
+                    aplicar_estilo_personalizado_celda(celda[1], materia.split(" (")[0], fuente="Arial", tamaño=11, negrita=True)
                     aplicar_estilo_personalizado_celda(celda[2], str(curso) if pd.notna(dni) else "", fuente="Arial",
                                                        tamaño=11, negrita=True)
 
@@ -594,7 +608,7 @@ def buscar_alumno_nombre(event=None):
     if nombre_buscado == "":
         # Si el campo está vacío, mostrar todos los registros
         for _, row in df.iterrows():
-            tabla.insert("", tk.END, values=list(row))
+            tabla.insert("", tk.END, values=list(row.split(" (")[0]))
         return
     # Buscar coincidencias parciales en el campo "ALUMNO"
     df_filtrado = df[df["ALUMNO"].astype(str).str.contains(nombre_buscado, case=False, na=False)]
@@ -795,13 +809,13 @@ combobox_condicion.set("Seleccione una condicion...")
 
 # Botones
 from PIL import Image, ImageTk  # Pillow
-imagen_original_lupa = Image.open("image/loupe.png")
+imagen_original_lupa = Image.open("recursos\image\loupe.png")
 imagen_redimensionada_lupa = imagen_original_lupa.resize((30, 30))
 lupa = ImageTk.PhotoImage(imagen_redimensionada_lupa)
-imagen_original_word = Image.open("image/google-docs.png")
+imagen_original_word = Image.open("recursos/image/google-docs.png")
 imagen_redimensionada_word = imagen_original_word.resize((30, 30))
 word = ImageTk.PhotoImage(imagen_redimensionada_word)
-imagen_original_excel = Image.open("image/xls.png")
+imagen_original_excel = Image.open("recursos/image/xls.png")
 imagen_redimensionada_excel = imagen_original_excel.resize((30, 30))
 excel = ImageTk.PhotoImage(imagen_redimensionada_excel)
 boton_registrar = tk.Button(ventana, text="Registrar", command=registrar, font=("Calibri", 11, "bold"), bg="white", image=excel, compound="left",)
