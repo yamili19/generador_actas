@@ -267,15 +267,15 @@ def generar_permisos():
         # Guardar el documento
         doc.save(ruta_archivo)
 
-        messagebox.showinfo("Éxito",
-                            "Permisos generados correctamente.")
+    messagebox.showinfo("Éxito",
+                        "Permisos generados correctamente.")
 
 
 def ajustar_columnas_automatically(archivo_excel, sheet):
     # Cargar el archivo Excel usando openpyxl
     libro = openpyxl.load_workbook(archivo_excel)
 
-    # Seleccionar la hoja activa (o puedes seleccionar una hoja específica)
+    # Seleccionamos la hoja que se pasa como parametro
     hoja = libro[sheet]
 
     # Recorrer todas las columnas y ajustarlas automáticamente
@@ -517,31 +517,37 @@ def registrar():
                              "El archivo Excel está abierto. Por favor, cierre el archivo y luego registre al alumno.")
 
 
-def buscar_alumno():
+def buscar_alumno(event=None):
     dni_buscado = entrada_dni.get().strip()
 
-    # Validar si el DNI ingresado es un número
-    if not dni_buscado.isdigit():
+    # Validar si el DNI ingresado es un número o está vacío
+    if not dni_buscado.isdigit() and dni_buscado != "":
         messagebox.showerror("Error", "Por favor, ingrese un DNI válido (solo números).")
         return
 
-    # Convertir el DNI a entero para asegurar la comparación correcta
-    dni = int(dni_buscado)
+    # Leer el archivo Excel
     df = pd.read_excel(archivo_excel)
 
     # Limpiar la tabla antes de insertar nuevos datos
     for item in tabla.get_children():
         tabla.delete(item)
-    # Buscar el alumno en el DataFrame
-    alumno_encontrado = df[df["DNI"] == dni]
 
-    if not alumno_encontrado.empty:
+    if dni_buscado == "":
+        # Si el campo está vacío, mostrar todos los registros
+        for _, row in df.iterrows():
+            tabla.insert("", tk.END, values=list(row))
+        return
+
+    # Buscar coincidencias parciales en el campo "DNI"
+    df_filtrado = df[df["DNI"].astype(str).str.contains(dni_buscado, case=False, na=False)]
+
+    if not df_filtrado.empty:
         # Mostrar cada registro del alumno encontrado en la tabla
-        for _, row in alumno_encontrado.iterrows():
+        for _, row in df_filtrado.iterrows():
             tabla.insert("", tk.END, values=list(row))
     else:
-        # Si no se encuentra el alumno, mostrar un mensaje de error
-        messagebox.showerror("Error", "El DNI ingresado no corresponde a ningún alumno registrado.")
+        # Si no se encuentra ninguna coincidencia
+        messagebox.showerror("Error", "No se encontró ningún alumno con el DNI ingresado.")
 
 def actualizar_materias(event):
     modalidad = combobox_especialidad.get().strip().upper()
@@ -672,6 +678,7 @@ entrada_nombre.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 tk.Label(ventana, text="DNI:", anchor="e", font=("Calibri", 11)).grid(row=1, column=0, padx=10, pady=10, sticky="e")
 vcmd = (ventana.register(validar_dni), "%S")  # Validación de entrada
 entrada_dni = tk.Entry(ventana, validate="key", validatecommand=vcmd, justify="center", font=("Calibri", 11))
+# Evento para buscar al alumno cuando el usuario escribe
 entrada_dni.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
 
 tk.Label(ventana, text="Curso:", anchor="e", font=("Calibri", 11)).grid(row=4, column=0, padx=10, pady=10, sticky="e")
@@ -698,8 +705,8 @@ combobox_condicion.set("Seleccione una condicion...")
 
 # Botones
 from PIL import Image, ImageTk  # Pillow
-imagen_original_lupa = Image.open("image/loupe.png")  # Ruta a tu imagen
-imagen_redimensionada_lupa = imagen_original_lupa.resize((30, 30))  # Ajustar tamaño (ancho, alto)
+imagen_original_lupa = Image.open("image/loupe.png")
+imagen_redimensionada_lupa = imagen_original_lupa.resize((30, 30))
 lupa = ImageTk.PhotoImage(imagen_redimensionada_lupa)
 imagen_original_word = Image.open("image/google-docs.png")
 imagen_redimensionada_word = imagen_original_word.resize((30, 30))
@@ -713,7 +720,7 @@ boton_generar_actas = tk.Button(ventana, text="Generar Actas", command=generar_a
 boton_generar_actas.grid(row=7, column=2, padx=10, pady=10, sticky="ew")
 boton_generar_permisos = tk.Button(ventana, text="Generar Permisos", command=generar_permisos, font=("Calibri", 11, "bold"), bg="white", image=word, compound="left",)
 boton_generar_permisos.grid(row=7, column=3, padx=10, pady=10, sticky="ew")
-boton_buscar = tk.Button(ventana, text="Buscar", command=buscar_alumno, font=("Calibri", 11, "bold"), image=lupa, compound="left", bg="white")
+boton_buscar = tk.Button(ventana, text="Buscar", command=buscar_alumno, font = ("Calibri", 11, "bold"), bg="white", image=lupa, compound="left")
 boton_buscar.grid(row=1, column=2, padx=10, pady=10, sticky="ew")
 ajustar_columnas_automatically(archivo_excel, "PERMISOS")
 ajustar_columnas_automatically(archivo_excel, "MMO")
