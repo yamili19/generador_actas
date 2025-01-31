@@ -18,8 +18,8 @@ def obtener_ruta_recurso(relativa):
     return os.path.join(base_path, relativa)
 
 # Ejemplo de uso
-ruta_permiso = obtener_ruta_recurso("recursos\PERMISOS EXAMEN - 2023.docx")
-ruta_acta = obtener_ruta_recurso("recursos\ACTA DE EXAMEN.docx")
+ruta_permiso = obtener_ruta_recurso(r"recursos\PERMISOS EXAMEN - 2023.docx")
+ruta_acta = obtener_ruta_recurso(r"recursos\ACTA DE EXAMEN.docx")
 
 # Crear el DataFrame inicial vacío
 columnas = ["N°","ALUMNO", "DNI", "MODALIDAD", "CONDICION", "CURSO", "ESPACIO CURRICULAR"]
@@ -233,109 +233,111 @@ from datetime import datetime
 import locale
 
 def generar_permisos():
-    # Cargar el archivo Excel
-    wb = load_workbook(archivo_excel)
-    ws = wb.active
+    try:
+        # Cargar el archivo Excel
+        wb = load_workbook(archivo_excel)
+        ws = wb.active
 
-    # Desbloquear la hoja para ediciones
-    ws.protection = SheetProtection(sheet=False)
+        # Desbloquear la hoja para ediciones
+        ws.protection = SheetProtection(sheet=False)
 
-    # Leer la hoja correspondiente (TEM o MMO) del archivo Excel
-    df = pd.read_excel(archivo_excel, sheet_name='PERMISOS')
+        # Leer la hoja correspondiente (TEM o MMO) del archivo Excel
+        df = pd.read_excel(archivo_excel, sheet_name='PERMISOS')
 
-    # Obtener las columnas dinámicas de alumnos y DNIs
-    columnas_espacio = [col for col in df.columns if col.startswith("ESPACIO CURRICULAR")]
-    columnas_curso = [col for col in df.columns if col.startswith("CURSO")]
+        # Obtener las columnas dinámicas de alumnos y DNIs
+        columnas_espacio = [col for col in df.columns if col.startswith("ESPACIO CURRICULAR")]
+        columnas_curso = [col for col in df.columns if col.startswith("CURSO")]
 
-    # Agrupar por alumno
-    grupos = df.groupby(["N°", "ALUMNO", "DNI", "MODALIDAD"])
-    # Establecer el idioma a español
-    locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')  # En sistemas Linux/Mac
-    # locale.setlocale(locale.LC_TIME, 'Spanish_Spain.1252')  # En sistemas Windows
+        # Agrupar por alumno
+        grupos = df.groupby(["N°", "ALUMNO", "DNI", "MODALIDAD"])
+        # Establecer el idioma a español
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')  # En sistemas Linux/Mac
+        # locale.setlocale(locale.LC_TIME, 'Spanish_Spain.1252')  # En sistemas Windows
 
-    # Obtener la fecha actual en el formato deseado
-    fecha_actual = datetime.now().strftime("TINOGASTA, %d de %B DE %Y").capitalize()
+        # Obtener la fecha actual en el formato deseado
+        fecha_actual = datetime.now().strftime("TINOGASTA, %d de %B DE %Y").capitalize()
 
-    for (nro, alumno, dni, modalidad), grupo in grupos:
-        # Crear un documento basado en la plantilla
-        doc = Document(ruta_permiso)
+        for (nro, alumno, dni, modalidad), grupo in grupos:
+            # Crear un documento basado en la plantilla
+            doc = Document(ruta_permiso)
 
-        # Llenar encabezados del acta
-        for paragraph in doc.paragraphs:
+            # Llenar encabezados del acta
+            for paragraph in doc.paragraphs:
 
-            if "PERMISO DE EXAMEN N°" in paragraph.text:
-                aplicar_estilo_encabezado(paragraph, "56", str(nro), fuente="Arial", tamaño=12, negrita=True)
-            if "alumno/a" in paragraph.text:
-                aplicar_estilo_encabezado(paragraph, "ORTIZ JOEL ALEXANDER", alumno, fuente="Arial", tamaño=12, negrita=True)
-            if "DNI" in paragraph.text:
-                aplicar_estilo_encabezado(paragraph, "48663822", str(dni), fuente="Arial", tamaño=12, negrita=True)
-            if "Plan de Estudios de" in paragraph.text:
-                aplicar_estilo_encabezado(paragraph, "TEM", modalidad, fuente="Arial", tamaño=12, negrita=True)
+                if "PERMISO DE EXAMEN N°" in paragraph.text:
+                    aplicar_estilo_encabezado(paragraph, "56", str(nro), fuente="Arial", tamaño=12, negrita=True)
+                if "alumno/a" in paragraph.text:
+                    aplicar_estilo_encabezado(paragraph, "ORTIZ JOEL ALEXANDER", alumno, fuente="Arial", tamaño=12, negrita=True)
+                if "DNI" in paragraph.text:
+                    aplicar_estilo_encabezado(paragraph, "48663822", str(dni), fuente="Arial", tamaño=12, negrita=True)
+                if "Plan de Estudios de" in paragraph.text:
+                    aplicar_estilo_encabezado(paragraph, "TEM", modalidad, fuente="Arial", tamaño=12, negrita=True)
 
-        # Llenar la tabla con los alumnos
-        table = doc.tables[0]
-        orden = 1
-        fila_actual = 1
+            # Llenar la tabla con los alumnos
+            table = doc.tables[0]
+            orden = 1
+            fila_actual = 1
 
-        for _, fila in grupo.iterrows():
-            for col_espacio, col_curso in zip(columnas_espacio, columnas_curso):
-                materia = fila[col_espacio]
-                curso = fila[col_curso]
+            for _, fila in grupo.iterrows():
+                for col_espacio, col_curso in zip(columnas_espacio, columnas_curso):
+                    materia = fila[col_espacio]
+                    curso = fila[col_curso]
 
-                if pd.notna(materia):
-                    if fila_actual < len(table.rows):
-                        celda = table.rows[fila_actual].cells
-                    else:
-                        celda = table.add_row().cells
+                    if pd.notna(materia):
+                        if fila_actual < len(table.rows):
+                            celda = table.rows[fila_actual].cells
+                        else:
+                            celda = table.add_row().cells
 
-                    aplicar_estilo_personalizado_celda(celda[0], f"{orden:02}", fuente="Arial", tamaño=11, negrita=True)
-                    aplicar_estilo_personalizado_celda(celda[1], materia.split(" (")[0], fuente="Arial", tamaño=11, negrita=True)
-                    aplicar_estilo_personalizado_celda(celda[2], str(curso) if pd.notna(dni) else "", fuente="Arial",
-                                                       tamaño=11, negrita=True)
+                        aplicar_estilo_personalizado_celda(celda[0], f"{orden:02}", fuente="Arial", tamaño=11, negrita=True)
+                        aplicar_estilo_personalizado_celda(celda[1], materia.split(" (")[0], fuente="Arial", tamaño=11, negrita=True)
+                        aplicar_estilo_personalizado_celda(celda[2], str(curso) if pd.notna(dni) else "", fuente="Arial",
+                                                        tamaño=11, negrita=True)
 
-                    for idx in [3, 4, 5]:
-                        aplicar_estilo_personalizado_celda(celda[idx], "", fuente="Arial", tamaño=11, negrita=True)
+                        for idx in [3, 4, 5]:
+                            aplicar_estilo_personalizado_celda(celda[idx], "", fuente="Arial", tamaño=11, negrita=True)
 
-                    orden += 1
-                    fila_actual += 1
-        # Reemplazar el texto específico en los párrafos
-        for paragraph in doc.paragraphs:
-            if "TINOGASTA, 30 de junio 		DE 2024" in paragraph.text:
-                paragraph.text = paragraph.text.replace("TINOGASTA, 30 de junio 		DE 2024", fecha_actual)
-                # Modificar el estilo de la fuente
-                run = paragraph.runs[0]  # El "run" representa un fragmento del texto en el párrafo
-                run.font.name = 'Arial'  # Cambiar la fuente a Arial
-                run.font.size = Pt(10)  # Cambiar el tamaño de la fuente
-                run.font.bold = True  # Negrita
+                        orden += 1
+                        fila_actual += 1
+            # Reemplazar el texto específico en los párrafos
+            for paragraph in doc.paragraphs:
+                if "TINOGASTA, 30 de junio 		DE 2024" in paragraph.text:
+                    paragraph.text = paragraph.text.replace("TINOGASTA, 30 de junio 		DE 2024", fecha_actual)
+                    # Modificar el estilo de la fuente
+                    run = paragraph.runs[0]  # El "run" representa un fragmento del texto en el párrafo
+                    run.font.name = 'Arial'  # Cambiar la fuente a Arial
+                    run.font.size = Pt(10)  # Cambiar el tamaño de la fuente
+                    run.font.bold = True  # Negrita
 
-        # Limpiar caracteres inválidos en el nombre del archivo
-        alumno_limpio = re.sub(r'[<>:"/\\|?*]', '', alumno)
+            # Limpiar caracteres inválidos en el nombre del archivo
+            alumno_limpio = re.sub(r'[<>:"/\\|?*]', '', alumno)
 
-        # Crear la carpeta para la modalidad si no existe
-        carpeta_alumno = "PERMISO_" + alumno_limpio.upper()
-        if not os.path.exists(carpeta_alumno):
-            os.makedirs(carpeta_alumno)
+            # Crear la carpeta para la modalidad si no existe
+            carpeta_alumno = "PERMISO_" + alumno_limpio.upper()
+            if not os.path.exists(carpeta_alumno):
+                os.makedirs(carpeta_alumno)
 
-        # Generar el nombre del archivo
-        nombre_archivo = f"Permiso_{alumno_limpio}.docx"
+            # Generar el nombre del archivo
+            nombre_archivo = f"Permiso_{alumno_limpio}.docx"
 
-        # Generar la ruta completa
-        ruta_archivo = os.path.join(carpeta_alumno, nombre_archivo)
+            # Generar la ruta completa
+            ruta_archivo = os.path.join(carpeta_alumno, nombre_archivo)
 
-        # Guardar el documento
-        doc.save(ruta_archivo)
-    
-    # Reproteger la hoja después de editar
-    wb = load_workbook(archivo_excel)
-    ws = wb.active
-    ws.protection = SheetProtection(sheet=True, password=contraseña)
+            # Guardar el documento
+            doc.save(ruta_archivo)
+        
+        # Reproteger la hoja después de editar
+        wb = load_workbook(archivo_excel)
+        ws = wb.active
+        ws.protection = SheetProtection(sheet=True, password=contraseña)
 
-    # Guardar el archivo nuevamente con protección
-    wb.save(archivo_excel)
+        # Guardar el archivo nuevamente con protección
+        wb.save(archivo_excel)
 
-    messagebox.showinfo("Éxito",
-                        "Permisos generados correctamente.")
-
+        messagebox.showinfo("Éxito",
+                            "Permisos generados correctamente.")
+    except:
+        messagebox.showerror("Error", "Error al generar los permisos.")
 
 def ajustar_columnas_automatically(archivo_excel, sheet):
     # Cargar el archivo Excel usando openpyxl
@@ -462,23 +464,27 @@ def generar_actas():
     wb.save(archivo_excel)
 
 def generar_actas_imprimir():
-    generar_actas()
-    hojaMMO = pd.read_excel(archivo_excel, sheet_name="MMO")
-    # Verificar si está vacía
-    if hojaMMO.empty:
-        generar_actas_excel(archivo_excel, "TEM")
-    hojaTEM = pd.read_excel(archivo_excel, sheet_name="TEM")
-    if hojaTEM.empty:
-        generar_actas_excel(archivo_excel, "MMO")
-    if hojaMMO.empty == False and hojaTEM.empty == False:
-        generar_actas_excel(archivo_excel, "TEM")
-        generar_actas_excel(archivo_excel, "MMO")
-    messagebox.showinfo("Éxito",
-                        "Actas generadas correctamente.")
+    try:
+        generar_actas()
+        hojaMMO = pd.read_excel(archivo_excel, sheet_name="MMO")
+        # Verificar si está vacía
+        if hojaMMO.empty:
+            generar_actas_excel(archivo_excel, "TEM")
+        hojaTEM = pd.read_excel(archivo_excel, sheet_name="TEM")
+        if hojaTEM.empty:
+            generar_actas_excel(archivo_excel, "MMO")
+        if hojaMMO.empty == False and hojaTEM.empty == False:
+            generar_actas_excel(archivo_excel, "TEM")
+            generar_actas_excel(archivo_excel, "MMO")
+        messagebox.showinfo("Éxito",
+                            "Actas generadas correctamente.")
+    except: 
+        messagebox.showerror("Error", "No se pueden generar las actas porque el archivo excel no tiene datos.")
+
 # Función para registrar los datos
 import os
 import openpyxl
-from openpyxl.utils.exceptions import InvalidFileException
+
 
 def registrar():
     global df
@@ -503,7 +509,12 @@ def registrar():
     if condicion not in ["REGULAR", "LIBRE"]:
         messagebox.showerror("Error", "La condición debe ser LIBRE o REGULAR.")
         return
-
+    if curso.startswith("SELECCIONE UN CURSO..."):
+        messagebox.showerror("Error", "Seleccione un curso.")
+        return
+    if materia.startswith("SELECCIONE UNA MATERIA..."):
+        messagebox.showerror("Error", "Seleccione una materia.")
+        return
     dni = str(dni)
 
     # Verificar si el archivo Excel está abierto
@@ -583,7 +594,7 @@ def registrar():
     try:
         # Sobreescribir el archivo Excel con openpyxl
         with pd.ExcelWriter(archivo_excel, engine="openpyxl", mode="w") as writer:
-            df.to_excel(writer, index=False)
+            df.to_excel(writer, sheet_name="PERMISOS", index=False)
         generar_actas()
         ajustar_columnas_automatically(archivo_excel, "PERMISOS")
         ajustar_columnas_automatically(archivo_excel, "MMO")
@@ -684,9 +695,9 @@ def buscar_materias(event):
 
 # Función para limpiar los campos del formulario
 def limpiar_campos():
-    combobox_curso.set("")  # Restablecer combobox
-    combobox_materia.delete(0, tk.END)
-    combobox_condicion.set("")  # Restablecer combobox
+    combobox_curso.set("Seleccione un curso...")  # Restablecer combobox
+    combobox_materia.set("Seleccione una materia...")
+    combobox_condicion.set("Seleccione una condicion...")  # Restablecer combobox
 
 # Validación para que solo se permitan números en el campo de DNI
 def validar_dni(caracter):
@@ -771,6 +782,66 @@ for col in columnas:
 ventana.columnconfigure(0, weight=1)
 ventana.rowconfigure(8, weight=1)
 
+# Función para manejar la edición de celdas
+def editar_celda(event):
+    try:
+        # Obtener la fila y columna seleccionada
+        region = tabla.identify_region(event.x, event.y)
+        if region == "cell":
+            col = tabla.identify_column(event.x)
+            fila = tabla.identify_row(event.y)
+            col_index = int(col.replace("#", "")) - 1
+            col_name = tabla.heading(col)["text"]
+
+            # Obtener el valor actual de la celda
+            item = tabla.item(fila)
+            valor_actual = item["values"][col_index]
+
+            # Crear un Combobox para editar la celda
+            if col_name.startswith("CURSO"):
+                combobox = ttk.Combobox(ventana, values=cursos, state="readonly")
+                combobox.set(valor_actual)
+            elif col_name.startswith("ESPACIO CURRICULAR"):
+                modalidad = item["values"][3]  # Asumiendo que la modalidad está en la columna 3
+                if modalidad == "MMO":
+                    combobox = ttk.Combobox(ventana, values=materias_mmo, state="readonly")
+                elif modalidad == "TEM":
+                    combobox = ttk.Combobox(ventana, values=materias_tem, state="readonly")
+                combobox.set(valor_actual)
+            else:
+                return
+
+            # Obtener las coordenadas y dimensiones de la celda seleccionada
+            x, y, width, height = tabla.bbox(fila, col)
+            print(x, y)
+
+            # Posicionar el Combobox encima de la celda seleccionada
+            combobox.place(x=x, y=y+751//2, width=width, height=height)
+
+            # Función para guardar el valor seleccionado
+            def guardar_valor(event):
+                nuevo_valor = combobox.get()
+                tabla.set(fila, col, nuevo_valor)
+                combobox.destroy()
+
+                # Actualizar el DataFrame
+                df.at[int(item["values"][0]) - 1, col_name] = nuevo_valor
+
+                # Guardar los cambios en el archivo Excel
+                with pd.ExcelWriter(archivo_excel, engine="openpyxl", mode="w") as writer:
+                    df.to_excel(writer, sheet_name="PERMISOS", index=False)
+                    df.to_excel(writer, sheet_name="MMO", index=False)
+                    df.to_excel(writer, sheet_name="TEM", index=False)
+
+            # Asignar la función de guardar al evento de selección
+            combobox.bind("<<ComboboxSelected>>", guardar_valor)
+            combobox.bind("<FocusOut>", guardar_valor)
+    except:
+        messagebox.showerror("Error", "Error al editar, por favor cierre el archivo excel.")
+
+# Asignar la función de edición al evento de doble clic
+tabla.bind("<Double-1>", editar_celda)
+
 # Generar lista de cursos (sin el símbolo ° repetido)
 cursos = [f"{año}°{div}°" for año in range(1, 8) for div in range(1, 3)]
 
@@ -809,13 +880,16 @@ combobox_condicion.set("Seleccione una condicion...")
 
 # Botones
 from PIL import Image, ImageTk  # Pillow
-imagen_original_lupa = Image.open("recursos\image\loupe.png")
+ruta_imagen_original_lupa = obtener_ruta_recurso(r"recursos\image\loupe.png")
+imagen_original_lupa = Image.open(ruta_imagen_original_lupa)
 imagen_redimensionada_lupa = imagen_original_lupa.resize((30, 30))
 lupa = ImageTk.PhotoImage(imagen_redimensionada_lupa)
-imagen_original_word = Image.open("recursos/image/google-docs.png")
+ruta_imagen_original_word = obtener_ruta_recurso(r"recursos\image\google-docs.png")
+imagen_original_word = Image.open(ruta_imagen_original_word)
 imagen_redimensionada_word = imagen_original_word.resize((30, 30))
 word = ImageTk.PhotoImage(imagen_redimensionada_word)
-imagen_original_excel = Image.open("recursos/image/xls.png")
+ruta_imagen_original_excel = obtener_ruta_recurso(r"recursos\image\xls.png")
+imagen_original_excel = Image.open(ruta_imagen_original_excel)
 imagen_redimensionada_excel = imagen_original_excel.resize((30, 30))
 excel = ImageTk.PhotoImage(imagen_redimensionada_excel)
 boton_registrar = tk.Button(ventana, text="Registrar", command=registrar, font=("Calibri", 11, "bold"), bg="white", image=excel, compound="left",)
